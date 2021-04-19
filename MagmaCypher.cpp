@@ -1,6 +1,7 @@
 #include <iostream>
 #include <iomanip>
 #include <napi.h>
+#include <string>
 
 using namespace std;
 static unsigned char Pi[8][16] =
@@ -226,7 +227,7 @@ Napi::String Encrypt(const Napi::CallbackInfo& info) {
     message += '\n';
 
     if(message.length() % 4 != 0){
-        message += u16string(message.length() % 4, '0');
+        message += u16string((4 - message.length() % 4), '0');
     }
 
     cypheredMessage.resize(message.length());
