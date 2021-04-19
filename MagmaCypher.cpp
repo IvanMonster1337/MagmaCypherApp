@@ -248,8 +248,55 @@ Napi::String Encrypt(const Napi::CallbackInfo& info) {
     return str;
 }
 
+Napi::String Decrypt(const Napi::CallbackInfo& info) {
+    Napi::Env env = info.Env();
+    if (info.Length() < 1) {
+        Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
+        return Napi::String::New(env, "");
+    }
+
+    if(!info[0].IsString()){
+        Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
+        return Napi::String::New(env, "");
+    }
+
+    u16string message = info[0].As<Napi::String>().Utf16Value();
+    u16string decypheredMessage = u16string();
+
+    decypheredMessage.resize(message.length());
+
+    cyphblck inblck;
+    cyphblck outblck;
+    int l = 0;
+
+    GOST_Magma_Expand_Key(key);
+    while(l < message.length()){
+        memcpy(inblck, &message[l], 8);
+        GOST_Magma_Decrypt(inblck, outblck);
+        memcpy(&decypheredMessage[l], outblck, 8);
+        l+=4;
+    }
+
+    int lastIndex = -1;
+
+    for(int i = 0; i < decypheredMessage.length(); i++){
+        if(decypheredMessage[i] == '\n'){
+            lastIndex = i;
+        }
+    }
+
+    if(lastIndex != -1){
+        decypheredMessage.erase(lastIndex);
+    }
+
+    Napi::String str = Napi::String::New(env, decypheredMessage);
+
+    return str;
+}
+
 Napi::Object init(Napi::Env env, Napi::Object exports) {
     exports.Set(Napi::String::New(env, "encrypt"), Napi::Function::New(env, Encrypt));
+    exports.Set(Napi::String::New(env, "decrypt"), Napi::Function::New(env, Decrypt));
     return exports;
 };
 
