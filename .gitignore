@@ -39,6 +39,9 @@ build/Release
 
 # Dependency directories
 node_modules/
+build/
+node-gyp/
+.vscode/
 jspm_packages/
 
 # TypeScript v1 declaration files
