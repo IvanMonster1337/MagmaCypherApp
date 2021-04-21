@@ -229,12 +229,12 @@ Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
+        return Napi::TypedArrayOf<uint8_t>::New(env, {1});
     }
 
     if(!info[0].IsTypedArray()){
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
+        return Napi::TypedArrayOf<uint8_t>::New(env, {1});
     }
 
     Napi::TypedArrayOf<uint8_t> arr = info[0].As<Napi::TypedArrayOf<uint8_t>>();
@@ -278,12 +278,12 @@ Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
+        return Napi::TypedArrayOf<uint8_t>::New(env, {1});
     }
 
     if(!info[0].IsTypedArray()){
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
+        return Napi::TypedArrayOf<uint8_t>::New(env, {1});
     }
 
     Napi::TypedArrayOf<uint8_t> arr = info[0].As<Napi::TypedArrayOf<uint8_t>>();
