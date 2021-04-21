@@ -2,8 +2,10 @@
 #include <iomanip>
 #include <napi.h>
 #include <string>
+#include <vector>
 
 using namespace std;
+
 static unsigned char Pi[8][16] =
 {
   {1,7,14,13,0,5,8,3,4,15,10,6,9,12,11,2},
@@ -37,6 +39,7 @@ vect iter_key[32];
 
 void GOST_Magma_Expand_Key(const uint8_t* key)
 {
+    // Формируем восемь 32-битных подключей в порядке следования с первого по восьмой
     memcpy(iter_key[0], key, 4);
     memcpy(iter_key[1], key + 4, 4);
     memcpy(iter_key[2], key + 8, 4);
@@ -95,14 +98,14 @@ static void GOST_Magma_T(const uint8_t* in_data, uint8_t* out_data)
     int i;
     for (i = 0; i < 4; i++)
     {
-
+        // Извлекаем первую 4-битную часть байта
         first_part_byte = (in_data[i] & 0xf0) >> 4;
-
+        // Извлекаем вторую 4-битную часть байта
         sec_part_byte = (in_data[i] & 0x0f);
-
+        // Выполняем замену в соответствии с таблицей подстановок
         first_part_byte = Pi[i * 2][first_part_byte];
         sec_part_byte = Pi[i * 2 + 1][sec_part_byte];
-
+        // «Склеиваем» обе 4-битные части обратно в байт
         out_data[i] = (first_part_byte << 4) | sec_part_byte;
     }
 }
@@ -111,18 +114,18 @@ static void GOST_Magma_g(const uint8_t* k, const uint8_t* a, uint8_t* out_data)
 {
     uint8_t internal[4];
     uint32_t out_data_32;
-
+    // Складываем по модулю 32 правую половину блока с итерационным ключом
     GOST_Magma_Add_32(a, k, internal);
-
+    // Производим нелинейное биективное преобразование результата
     GOST_Magma_T(internal, internal);
-
+    // Преобразовываем четырехбайтный вектор в одно 32-битное число
     out_data_32 = internal[0];
     out_data_32 = (out_data_32 << 8) + internal[1];
     out_data_32 = (out_data_32 << 8) + internal[2];
     out_data_32 = (out_data_32 << 8) + internal[3];
-
+    // Циклически сдвигаем все влево на 11 разрядов
     out_data_32 = (out_data_32 << 11) | (out_data_32 >> 21);
-
+    // Преобразовываем 32-битный результат сдвига обратно в 4-байтовый вектор
     out_data[3] = out_data_32;
     out_data[2] = out_data_32 >> 8;
     out_data[1] = out_data_32 >> 16;
@@ -131,30 +134,32 @@ static void GOST_Magma_g(const uint8_t* k, const uint8_t* a, uint8_t* out_data)
 
 static void GOST_Magma_G(const uint8_t* k, const uint8_t* a, uint8_t* out_data)
 {
-    uint8_t a_0[4];
-    uint8_t a_1[4];
+    uint8_t a_0[4]; // Правая половина блока
+    uint8_t a_1[4]; // Левая половина блока
     uint8_t G[4];
 
     int i;
-
+    // Делим 64-битный исходный блок на две части
     for (i = 0; i < 4; i++)
     {
         a_0[i] = a[4 + i];
         a_1[i] = a[i];
     }
 
+    // Производим преобразование g
     GOST_Magma_g(k, a_0, G);
-
+    // Ксорим результат преобразования g с левой половиной блока
     GOST_Magma_Add(a_1, G, G);
 
     for (i = 0; i < 4; i++)
     {
-
+        // Пишем в левую половину значение из правой
         a_1[i] = a_0[i];
-
+        // Пишем результат GOST_Magma_Add в правую половину блока
         a_0[i] = G[i];
     }
 
+    // Сводим правую и левую части блока в одно целое
     for (i = 0; i < 4; i++)
     {
         out_data[i] = a_1[i];
@@ -164,25 +169,27 @@ static void GOST_Magma_G(const uint8_t* k, const uint8_t* a, uint8_t* out_data)
 
 static void GOST_Magma_G_Fin(const uint8_t* k, const uint8_t* a, uint8_t* out_data)
 {
-    uint8_t a_0[4];
-    uint8_t a_1[4]; 
+    uint8_t a_0[4]; // Правая половина блока
+    uint8_t a_1[4]; // Левая половина блока
     uint8_t G[4];
 
     int i;
-
+    // Делим 64-битный исходный блок на две части
     for (i = 0; i < 4; i++)
     {
         a_0[i] = a[4 + i];
         a_1[i] = a[i];
     }
 
+    // Производим преобразование g
     GOST_Magma_g(k, a_0, G);
-
+    // Ксорим результат преобразования g с левой половиной блока
     GOST_Magma_Add(a_1, G, G);
-
+    // Пишем результат GOST_Magma_Add в левую половину блока
     for (i = 0; i < 4; i++)
         a_1[i] = G[i];
 
+    // Сводим правую и левую части блока в одно целое
     for (i = 0; i < 4; i++)
     {
         out_data[i] = a_1[i];
@@ -193,106 +200,127 @@ static void GOST_Magma_G_Fin(const uint8_t* k, const uint8_t* a, uint8_t* out_da
 void GOST_Magma_Encrypt(const uint8_t* blk, uint8_t* out_blk)
 {
     int i;
+    // Первое преобразование G
     GOST_Magma_G(iter_key[0], blk, out_blk);
+    // Последующие (со второго по тридцать первое) преобразования G
     for (i = 1; i < 31; i++)
         GOST_Magma_G(iter_key[i], out_blk, out_blk);
-
+    // Последнее (тридцать второе) преобразование G
     GOST_Magma_G_Fin(iter_key[31], out_blk, out_blk);
 }
 
 void GOST_Magma_Decrypt(const uint8_t* blk, uint8_t* out_blk)
 {
     int i;
+    // Первое преобразование G с использованием
+    // тридцать второго итерационного ключа
     GOST_Magma_G(iter_key[31], blk, out_blk);
+    // Последующие (со второго по тридцать первое) преобразования G
+    // (итерационные ключи идут в обратном порядке)
     for (i = 30; i > 0; i--)
         GOST_Magma_G(iter_key[i], out_blk, out_blk);
-
+    // Последнее (тридцать второе) преобразование G
+    // с использованием первого итерационного ключа
     GOST_Magma_G_Fin(iter_key[0], out_blk, out_blk);
 }
 
-Napi::String Encrypt(const Napi::CallbackInfo& info) {
+Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
+    GOST_Magma_Expand_Key(key);
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::String::New(env, "");
+        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
     }
 
-    if(!info[0].IsString()){
+    if(!info[0].IsTypedArray()){
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::String::New(env, "");
+        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
     }
 
-    u16string message = info[0].As<Napi::String>().Utf16Value();
-    u16string cypheredMessage = u16string();
-    message += '\n';
-
-    if(message.length() % 4 != 0){
-        message += u16string((4 - message.length() % 4), '0');
+    Napi::TypedArrayOf<uint8_t> arr = info[0].As<Napi::TypedArrayOf<uint8_t>>();
+    int bufferLength = arr.ElementLength();
+    vector<uint8_t> msg;
+    for(int i = 0; i < bufferLength; i++){
+        msg.push_back(arr[i]);
     }
 
-    cypheredMessage.resize(message.length());
+    vector<uint8_t> cyphMsg;
+    msg.push_back(1);
+
+    if(msg.size() % 8 != 0){
+        int size = msg.size();
+        for(int i = 0; i< 8-(size % 8); i++)
+        {
+            msg.push_back(0);
+        }
+    }
+
+    cyphMsg.resize(msg.size());
 
     cyphblck inblck;
     cyphblck outblck;
     int l = 0;
 
-    GOST_Magma_Expand_Key(key);
-    while(l < message.length()){
-        memcpy(inblck, &message[l], 8);
+    while((l+1) < msg.size()){
+        memcpy(inblck, &msg[l], 8);
         GOST_Magma_Encrypt(inblck, outblck);
-        memcpy(&cypheredMessage[l], outblck, 8);
-        l+=4;
+        memcpy(&cyphMsg[l], outblck, 8);
+        l+=8;
     }
 
-    Napi::String str = Napi::String::New(env, cypheredMessage);
-
-    return str;
+    Napi::TypedArrayOf<uint8_t> result = Napi::TypedArrayOf<uint8_t>::New(env, cyphMsg.size());
+    memcpy(result.Data(), &cyphMsg[0], cyphMsg.size());
+    return result;
 }
 
-Napi::String Decrypt(const Napi::CallbackInfo& info) {
+Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
+    GOST_Magma_Expand_Key(key);
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::String::New(env, "");
+        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
     }
 
-    if(!info[0].IsString()){
+    if(!info[0].IsTypedArray()){
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
-        return Napi::String::New(env, "");
+        return Napi::TypedArrayOf<uint8_t>::TypedArrayOf();
     }
 
-    u16string message = info[0].As<Napi::String>().Utf16Value();
-    u16string decypheredMessage = u16string();
+    Napi::TypedArrayOf<uint8_t> arr = info[0].As<Napi::TypedArrayOf<uint8_t>>();
+    int bufferLength = arr.ElementLength();
+    vector<uint8_t> msg;
+    msg.resize(bufferLength);
+    memcpy(&msg[0], &arr[0], bufferLength);
 
-    decypheredMessage.resize(message.length());
+    vector<uint8_t> cyphMsg;
+
+    cyphMsg.resize(msg.size());
 
     cyphblck inblck;
     cyphblck outblck;
     int l = 0;
 
-    GOST_Magma_Expand_Key(key);
-    while(l < message.length()){
-        memcpy(inblck, &message[l], 8);
+    while((l+1) < msg.size()){
+        memcpy(inblck, &msg[l], 8);
         GOST_Magma_Decrypt(inblck, outblck);
-        memcpy(&decypheredMessage[l], outblck, 8);
-        l+=4;
+        memcpy(&cyphMsg[l], outblck, 8);
+        l+=8;
     }
 
     int lastIndex = -1;
-
-    for(int i = 0; i < decypheredMessage.length(); i++){
-        if(decypheredMessage[i] == '\n'){
+    for(int i = 0; i < cyphMsg.size(); i++){
+        if(cyphMsg[i] == 1){
             lastIndex = i;
         }
     }
 
     if(lastIndex != -1){
-        decypheredMessage.erase(lastIndex);
+        cyphMsg.resize(lastIndex);
     }
 
-    Napi::String str = Napi::String::New(env, decypheredMessage);
-
-    return str;
+    Napi::TypedArrayOf<uint8_t> result = Napi::TypedArrayOf<uint8_t>::New(env, cyphMsg.size());
+    memcpy(result.Data(), &cyphMsg[0], cyphMsg.size());
+    return result;
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
