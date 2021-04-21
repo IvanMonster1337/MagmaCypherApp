@@ -4,12 +4,8 @@ const bodyParser = require('body-parser');
 
 let latestEncrypt;
 
-const symbols = {
-    "10" : 13
-}
-
 const app = express();
-const port = 3000;
+const port = process.env.PORT;
 app.use(bodyParser.json());
 app.use("/static", express.static('./html/'));
 
