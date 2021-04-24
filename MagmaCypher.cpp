@@ -4,7 +4,8 @@
 #include <string>
 #include <vector>
 
-using namespace std;
+using std::string;
+using std::vector;
 
 static unsigned char Pi[8][16] =
 {
@@ -20,7 +21,7 @@ static unsigned char Pi[8][16] =
 
 const short CYPHER_BLOCK_SIZE = 8;
 const short BLOCK_SIZE = 4;
-
+string logJournal = "";
 typedef uint8_t vect[BLOCK_SIZE];
 typedef uint8_t cyphblck[CYPHER_BLOCK_SIZE];
 
@@ -72,6 +73,12 @@ void GOST_Magma_Expand_Key(const uint8_t* key)
     memcpy(iter_key[29], key + 8, 4);
     memcpy(iter_key[30], key + 4, 4);
     memcpy(iter_key[31], key, 4);
+    logJournal += "Generating keys:\n";
+    char buff[60];
+    for (int i = 0; i < 32; i++) {
+        snprintf(buff, sizeof(buff), "key[%i] = %02X:%02X:%02X:%02X \n", (i+1), iter_key[i][0], iter_key[i][1], iter_key[i][2], iter_key[i][3]);
+        logJournal += buff;
+    }
 }
 
 static void GOST_Magma_Add(const uint8_t* a, const uint8_t* b, uint8_t* c)
@@ -200,32 +207,84 @@ static void GOST_Magma_G_Fin(const uint8_t* k, const uint8_t* a, uint8_t* out_da
 void GOST_Magma_Encrypt(const uint8_t* blk, uint8_t* out_blk)
 {
     int i;
+    char buff[60];
     // Первое преобразование G
+    logJournal += "Starting Encryption...\r\n";
+    logJournal += "G transformation 1: ";
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        blk[0], blk[1], blk[2], blk[3], blk[4], blk[5], blk[6], blk[7]);
+    logJournal += buff;
     GOST_Magma_G(iter_key[0], blk, out_blk);
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+    logJournal += buff;
     // Последующие (со второго по тридцать первое) преобразования G
-    for (i = 1; i < 31; i++)
+    for (i = 1; i < 31; i++){
+        logJournal += "G transformation ";
+        logJournal += std::to_string(i+1);
+        logJournal += " : ";
+        snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
         GOST_Magma_G(iter_key[i], out_blk, out_blk);
+        snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
+    }
     // Последнее (тридцать второе) преобразование G
+    logJournal += "Final G transformation : ";
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
     GOST_Magma_G_Fin(iter_key[31], out_blk, out_blk);
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
 }
 
 void GOST_Magma_Decrypt(const uint8_t* blk, uint8_t* out_blk)
 {
     int i;
+    char buff[60];
     // Первое преобразование G с использованием
     // тридцать второго итерационного ключа
+    logJournal += "Starting Decryption...\r\n";
+    logJournal += "G transformation 32: ";
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        blk[0], blk[1], blk[2], blk[3], blk[4], blk[5], blk[6], blk[7]);
+    logJournal += buff;
     GOST_Magma_G(iter_key[31], blk, out_blk);
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+    logJournal += buff;
     // Последующие (со второго по тридцать первое) преобразования G
     // (итерационные ключи идут в обратном порядке)
     for (i = 30; i > 0; i--)
+    {
+        logJournal += "G transformation ";
+        logJournal += std::to_string(i+1);
+        logJournal += " : ";
+        snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
         GOST_Magma_G(iter_key[i], out_blk, out_blk);
+        snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
+    }
     // Последнее (тридцать второе) преобразование G
     // с использованием первого итерационного ключа
+    logJournal += "Final G transformation : ";
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
     GOST_Magma_G_Fin(iter_key[0], out_blk, out_blk);
+    snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+        out_blk[0], out_blk[1], out_blk[2], out_blk[3], out_blk[4], out_blk[5], out_blk[6], out_blk[7]);
+        logJournal += buff;
 }
 
 Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
-    GOST_Magma_Expand_Key(key);
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
@@ -237,6 +296,38 @@ Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
         return Napi::TypedArrayOf<uint8_t>::New(env, {1});
     }
 
+    if(info.Length() > 1){
+        if(!info[1].IsTypedArray()){
+            Napi::TypeError::New(env, "Wrong key").ThrowAsJavaScriptException();
+            return Napi::TypedArrayOf<uint8_t>::New(env, {1});
+        }
+
+        Napi::TypedArrayOf<uint8_t> paramKey = info[1].As<Napi::TypedArrayOf<uint8_t>>();
+        int bufferLength = paramKey.ElementLength();
+        if(bufferLength == 32){
+            vector<uint8_t> customKey;
+            customKey.resize(bufferLength);
+            memcpy(&customKey[0], &paramKey[0], bufferLength);
+            char buff[150];
+            logJournal += "Using custom key: ";
+            snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+            customKey[0], customKey[1], customKey[2], customKey[3], customKey[4], customKey[5], customKey[6], customKey[7],
+            customKey[8], customKey[9], customKey[10], customKey[11], customKey[12], customKey[13], customKey[14], customKey[15],
+            customKey[16], customKey[17], customKey[18], customKey[19], customKey[20], customKey[21], customKey[22], customKey[23],
+            customKey[24], customKey[25], customKey[26], customKey[27], customKey[28], customKey[29], customKey[30], customKey[31]);
+            logJournal += buff;
+            GOST_Magma_Expand_Key(&customKey[0]);
+        }
+        else {
+            logJournal += "Using default key \n";
+            GOST_Magma_Expand_Key(key);
+        }
+    }
+    else{
+        logJournal += "Using default key \n";
+        GOST_Magma_Expand_Key(key);
+    }
+
     Napi::TypedArrayOf<uint8_t> arr = info[0].As<Napi::TypedArrayOf<uint8_t>>();
     int bufferLength = arr.ElementLength();
     vector<uint8_t> msg;
@@ -246,6 +337,7 @@ Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
 
     vector<uint8_t> cyphMsg;
     msg.push_back(1);
+    char buff[60];
 
     if(msg.size() % 8 != 0){
         int size = msg.size();
@@ -262,7 +354,13 @@ Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
     int l = 0;
 
     while((l+1) < msg.size()){
+        logJournal += "Block ";
+        logJournal += std::to_string(l/8);
+        logJournal += ": ";
         memcpy(inblck, &msg[l], 8);
+        snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        inblck[0], inblck[1], inblck[2], inblck[3], inblck[4], inblck[5], inblck[6], inblck[7]);
+        logJournal += buff;
         GOST_Magma_Encrypt(inblck, outblck);
         memcpy(&cyphMsg[l], outblck, 8);
         l+=8;
@@ -273,8 +371,14 @@ Napi::TypedArrayOf<uint8_t> Encrypt(const Napi::CallbackInfo& info) {
     return result;
 }
 
+Napi::String GetLog(const Napi::CallbackInfo& info){
+    Napi::Env env = info.Env();
+    Napi::String logStr = Napi::String::New(env, logJournal);
+    logJournal.resize(0);
+    return logStr;
+}
+
 Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
-    GOST_Magma_Expand_Key(key);
     Napi::Env env = info.Env();
     if (info.Length() < 1) {
         Napi::TypeError::New(env, "Wrong arguments").ThrowAsJavaScriptException();
@@ -286,6 +390,38 @@ Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
         return Napi::TypedArrayOf<uint8_t>::New(env, {1});
     }
 
+    if(info.Length() > 1){
+        if(!info[1].IsTypedArray()){
+            Napi::TypeError::New(env, "Wrong key").ThrowAsJavaScriptException();
+            return Napi::TypedArrayOf<uint8_t>::New(env, {1});
+        }
+
+        Napi::TypedArrayOf<uint8_t> paramKey = info[1].As<Napi::TypedArrayOf<uint8_t>>();
+        int bufferLength = paramKey.ElementLength();
+        if(bufferLength == 32){
+            vector<uint8_t> customKey;
+            customKey.resize(bufferLength);
+            memcpy(&customKey[0], &paramKey[0], bufferLength);
+            char buff[150];
+            logJournal += "Using custom key: ";
+            snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X \n",
+            customKey[0], customKey[1], customKey[2], customKey[3], customKey[4], customKey[5], customKey[6], customKey[7],
+            customKey[8], customKey[9], customKey[10], customKey[11], customKey[12], customKey[13], customKey[14], customKey[15],
+            customKey[16], customKey[17], customKey[18], customKey[19], customKey[20], customKey[21], customKey[22], customKey[23],
+            customKey[24], customKey[25], customKey[26], customKey[27], customKey[28], customKey[29], customKey[30], customKey[31]);
+            logJournal += buff;
+            GOST_Magma_Expand_Key(&customKey[0]);
+        }
+        else {
+            logJournal += "Using default key \n";
+            GOST_Magma_Expand_Key(key);
+        }
+    }
+    else{
+        logJournal += "Using default key \n";
+        GOST_Magma_Expand_Key(key);
+    }
+
     Napi::TypedArrayOf<uint8_t> arr = info[0].As<Napi::TypedArrayOf<uint8_t>>();
     int bufferLength = arr.ElementLength();
     vector<uint8_t> msg;
@@ -293,6 +429,7 @@ Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
     memcpy(&msg[0], &arr[0], bufferLength);
 
     vector<uint8_t> cyphMsg;
+    char buff[60];
 
     cyphMsg.resize(msg.size());
 
@@ -301,6 +438,13 @@ Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
     int l = 0;
 
     while((l+1) < msg.size()){
+        logJournal += "Block ";
+        logJournal += std::to_string(l/8);
+        logJournal += ": ";
+        memcpy(inblck, &msg[l], 8);
+        snprintf(buff, sizeof(buff), "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X ->",
+        inblck[0], inblck[1], inblck[2], inblck[3], inblck[4], inblck[5], inblck[6], inblck[7]);
+        logJournal += buff;
         memcpy(inblck, &msg[l], 8);
         GOST_Magma_Decrypt(inblck, outblck);
         memcpy(&cyphMsg[l], outblck, 8);
@@ -324,6 +468,7 @@ Napi::TypedArrayOf<uint8_t> Decrypt(const Napi::CallbackInfo& info) {
 }
 
 Napi::Object init(Napi::Env env, Napi::Object exports) {
+    exports.Set(Napi::String::New(env, "log"), Napi::Function::New(env, GetLog));
     exports.Set(Napi::String::New(env, "encrypt"), Napi::Function::New(env, Encrypt));
     exports.Set(Napi::String::New(env, "decrypt"), Napi::Function::New(env, Decrypt));
     return exports;

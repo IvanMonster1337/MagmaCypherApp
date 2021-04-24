@@ -20,6 +20,7 @@
       <div class="content">
     <h1>⚡ Welcome to MagmaCypherApp!</h1>
     <p> Write your message in text area down below and choose ciphering or deciphering.</p>
+    <p class="help is-danger">Note: only ASCII characters are supported. For messages with any other characters behavior can be unpredictable.</p>
   </div>
     </div>
   </div>
@@ -34,18 +35,32 @@
     </div>
         <div class="column is-one-fifths is-centered">
           <div class="block">
-          <div class="buttons is-centered">
-          <button id="cipher" class="button is-primary is-outlined">Cipher</button>
-          <button id="decipher" class="button is-primary is-outlined">Decipher</button>
+          <div class="control">
+            <textarea class="textarea is-primary" type="text" id="key" placeholder="Key"></textarea>
           </div>
         </div>
+        <div class="block">
+          <div class="buttons is-centered">
+            <button id="cipher" class="button is-primary is-outlined">Cipher</button>
+            <button id="decipher" class="button is-primary is-outlined">Decipher</button>
+            </div>
         </div>
+      </div>
     <div class = "column is-two-fifths" >
       <div class="control">
         <label class="label">Use 'Decipher' button to decipher this message</label>
         <textarea id="result" class="textarea" readonly placeholder="Ciphered message"></textarea>
       </div>
     </div>
+    </div>
+  </div>
+</div>
+<div class="box">
+  <div class="block">
+    <div class="content">
+      <button id="logButton" class="button is-info is-outlined">Check log</button>
+      <h1>Here you can look at log showing how algorithm works: </h1>
+      <p id="log"></p>
     </div>
   </div>
 </div>
