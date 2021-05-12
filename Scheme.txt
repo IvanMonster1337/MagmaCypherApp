@@ -1,0 +1,61 @@
+--Encr/Decr
+stateDiagram-v2
+    state Block{
+    Blck --> L
+    Blck --> R
+    }
+    R --> mod32
+    Key --> mod32
+    mod32 --> T
+    T --> <<11
+    L --> XOR
+    <<11 --> XOR
+    XOR --> R2
+    R --> L2
+    state LastBlock{
+    R2 --> Cyphered
+    L2 --> Cyphered
+}
+
+--Keys
+graph TD
+    K --> k1
+    K --> k2
+    K --> k3
+    K --> k4
+    K --> k5
+    K --> k6
+    K --> k7
+    K --> k8
+    k1 --> K1
+    k2 --> K2
+    k3 --> K3
+    k4 --> K4
+    k5 --> K5
+    k6 --> K6
+    k7 --> K7
+    k8 --> K8
+    K1 --> K9
+    K9 --> K17
+    K17 --> K32
+    K2 --> K10
+    K10 --> K18
+    K18 --> K31
+    K3 --> K11
+    K11 --> K19
+    K19 --> K30
+    K4 --> K12
+    K12 --> K20
+    K20 --> K29
+    K5 --> K13
+    K13 --> K21
+    K21 --> K28
+    K6 --> K14
+    K14 --> K22
+    K22 --> K27
+    K7 --> K15
+    K15 --> K23
+    K23 --> K26
+    K8 --> K16
+    K16 --> K24
+    K24 --> K25

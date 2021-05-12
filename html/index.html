@@ -1,68 +1,66 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="UTF-16">
-    <title>MagmaCypherApp</title>
-    <link rel="stylesheet" href="index.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
-    <script defer src="static/render.js" charset="utf-8"></script>
-    <style>
-      body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    margin: auto;
-    padding: 2rem;
+
+<head>
+  <meta charset="UTF-16">
+  <title>MagmaCypherApp</title>
+  <link rel="stylesheet" href="index.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.2/css/bulma.min.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: auto;
+      padding: 2rem;
     }
-    </style>
-  </head>
-  <body>
-    <div class="box">
+  </style>
+</head>
+
+<body>
+  <div class="box">
     <div class="block">
       <div class="content">
-    <h1>⚡ Welcome to MagmaCypherApp!</h1>
-    <p> Write your message in text area down below and choose ciphering or deciphering.</p>
-    <p class="help is-danger">Note: only ASCII characters are supported. For messages with any other characters behavior can be unpredictable.</p>
-  </div>
+        <h1>⚡ Welcome to MagmaCypherApp!</h1>
+        <p> Please select mode and follow the next instructions.</p>
+        <p class="help is-danger">Note: only ASCII characters are supported in messaging mode. For messages with any other characters
+          behavior can be unpredictable.</p>
+      </div>
     </div>
   </div>
-    <div class="box">
-    <div class="block">
-    <div class="columns is-vcentered">
-      <div class = "column is-two-fifths">
-        <label class="label">Message to cipher</label>
-        <div class="control">
-          <textarea id="msg" class="textarea is-primary" placeholder="Cipher message"></textarea>
+  <div class="box">
+    <div class ="block">
+      <div class="columns is-mobile">
+        <div class ="column is-offset-2 is-4">
+          <button class="button is-primary is-light is-large" id="msgButton">Use message mode</button>
         </div>
+        <div class ="column is-4">
+          <button class="button is-primary is-light is-large" id="fileButton">Use input file mode</button>
+        </div>
+      </div>
     </div>
-        <div class="column is-one-fifths is-centered">
-          <div class="block">
-          <div class="control">
-            <textarea class="textarea is-primary" type="text" id="key" placeholder="Key"></textarea>
+  </div>
+  <div class="box">
+    <div class="block" id="buttons">
+    </div>
+    <div class="box" id="visBox" style="visibility: hidden;">
+      <div class="block">
+        <div class="columns is-mobile">
+          <div class="column is-2">
+            <button class="button is-primary" id="previousDiagram" style="visibility: hidden;">Previous</button>
+          </div>
+          <div class="column is-2 is-offset-8">
+            <button class="button is-primary" id="nextDiagram">Next</button>
           </div>
         </div>
-        <div class="block">
-          <div class="buttons is-centered">
-            <button id="cipher" class="button is-primary is-outlined">Cipher</button>
-            <button id="decipher" class="button is-primary is-outlined">Decipher</button>
-            </div>
+        <div class="columns">
+          <div class="column is-10 is-offset-1" id="merm">
+          </div>
         </div>
       </div>
-    <div class = "column is-two-fifths" >
-      <div class="control">
-        <label class="label">Use 'Decipher' button to decipher this message</label>
-        <textarea id="result" class="textarea" readonly placeholder="Ciphered message"></textarea>
-      </div>
-    </div>
     </div>
   </div>
-</div>
-<div class="box">
-  <div class="block">
-    <div class="content">
-      <button id="logButton" class="button is-info is-outlined">Check log</button>
-      <h1>Here you can look at log showing how algorithm works: </h1>
-      <p id="log"></p>
-    </div>
-  </div>
-</div>
-  </body>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <script defer src="static/initMermaid.js" charset="utf-8"></script>
+  <script defer src="static/render.js" charset="utf-8"></script>
+</body>
+
 </html>
