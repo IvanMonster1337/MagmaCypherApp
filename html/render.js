@@ -104,6 +104,9 @@ function setMessageMode(){
 
 function ciphMsg(){
     const str = document.getElementById('msg').value;
+    if(str === ""){
+        return;
+    }
     const key = document.getElementById('key').value;
     const arr = strEncodeUTF8(str);
     cipher(arr, key);
